@@ -1,0 +1,6 @@
+.idea
+.postgresql
+venv
+.DS_store
+logs
+plugins
