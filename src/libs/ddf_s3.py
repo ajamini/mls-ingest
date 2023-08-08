@@ -117,7 +117,7 @@ class S3Handler:
             }
 
             self.client.put_object(**args)
-            return True
+            return photo_path
         except Exception as e:
             logger.error(e)
             logger.error("Failed to save photo: %s", photo_path)
@@ -176,27 +176,28 @@ class S3Handler:
         except Exception as e:
             logger.error(e)
 
-    def get_photos(self,listing,failed_downloads):
+    def get_photos(self,listing_key,failed_downloads):
         """retrives multiple photos for a listing then save them individually
             Returns True if listings photos were successfully retrived and saved"""
+        objects = {}
         try:
-            listing_key = listing['MLS']
             photos_object = self.rets_session.get_object(resource='Property', object_type="Photo",
                                                         resource_keys=[listing_key])
             for photo in photos_object:
                 byte_stream = photo.data
                 photo_id = photo.object_id
+                print("downloading key:%s id:%s" % (listing_key, photo_id))
                 if len(byte_stream)< 500:
                     logger.error("Error in Photo:%s for listing:%s", photo_id, listing_key)
                     self.append_failed_photo(photo_id, listing_key, failed_downloads)
                     continue
                 else:
-                    self.save_photo(byte_stream,listing_key,photo_id)
-            return True
+                    objects[photo_id] = self.save_photo(byte_stream,listing_key,photo_id)
         except Exception as e:
             logger.error(e)
             logger.error("Failed to get Photos for Listing:%s", listing_key)
-            return False
+
+        return objects
 
     def compare_photo(self,listing_key,photo_dict,prev_time_stamp):
         try:

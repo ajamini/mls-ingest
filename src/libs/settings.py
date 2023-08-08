@@ -1,6 +1,7 @@
 login_url = 'http://rets.torontomls.net:6103/rets-treb3pv/server/login'
 #login_url = 'http://data.crea.ca/Login.svc/Login'
 username = 'D18ais'
+username_all = 'D18ais_a'
 password = 'M64#a85'
 
 s3_reader = False #Enable S3, if Disabled Local file System will be used.

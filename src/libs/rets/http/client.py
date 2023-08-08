@@ -64,6 +64,9 @@ class RetsHttpClient:
         # this session id is part of the rets standard for use with a user agent password
         self._rets_session_id = ''
 
+    def dump(self):
+        pass
+
     @property
     def user_agent(self) -> str:
         """
@@ -159,6 +162,7 @@ class RetsHttpClient:
                standard_names: bool = False,
                query_type: str = 'DMQL2',
                format_: str = 'COMPACT-DECODED',
+               parse_format: str = None
                ) -> SearchResult:
         """
         The Search transaction requests that the server search one or more searchable databases
@@ -224,7 +228,7 @@ class RetsHttpClient:
         payload = {k: v for k, v in raw_payload.items() if v is not None}
 
         response = self._http_request(self._url_for('Search'), payload=payload)
-        return parse_search(response)
+        return parse_search(response, format_=parse_format)
 
     def get_object(self,
                    resource: str,

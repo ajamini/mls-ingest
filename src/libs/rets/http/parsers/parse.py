@@ -128,7 +128,7 @@ def parse_system(response: Response) -> SystemMetadata:
     )
 
 
-def parse_search(response: Response, raw_str: str = None) -> SearchResult:
+def parse_search(response: Response, raw_str: str = None, format_: str = None) -> SearchResult:
     try:
         if raw_str:
             elem = etree.fromstring(raw_str, parser=etree.XMLParser(recover=True))
@@ -146,7 +146,10 @@ def parse_search(response: Response, raw_str: str = None) -> SearchResult:
         count = None
 
     try:
-        data = tuple(_parse_data(elem))
+        if format_ == 'active':
+            data = _parse_active_listing(elem)
+        else:
+            data = tuple(_parse_data(elem))
     except RetsParseError:
         data = None
 
@@ -186,6 +189,33 @@ def _parse_data(elem: etree.Element) -> Iterable[dict]:
     </RETS>
     """
     delimiter = '\\t' #_parse_delimiter(elem)
+
+    columns_elem = _find_or_raise(elem, 'COLUMNS')
+    columns = _parse_data_line(columns_elem, delimiter)
+
+    data_elems = elem.findall('DATA')
+
+    return (OrderedDict(zip_longest(columns, _parse_data_line(data, delimiter)))
+            for data in data_elems)
+
+def _parse_active_listing(elem: etree.Element) -> Iterable[dict]:
+    """
+    Parses a generic container element enclosing a single COLUMNS and multiple DATA elems, and
+    returns a generator of dicts with keys given by the COLUMNS elem and values given by each
+    DATA elem. The container elem may optionally contain a DELIMITER elem to define the delimiter
+    used, otherwise a default of '\t' is assumed.
+
+    <RETS ReplyCode="0" ReplyText="Success">
+        <DELIMITER value="09"/>
+        <COLUMNS>	LIST_87	LIST_105	LIST_1	</COLUMNS>
+        <DATA>	2016-12-01T00:08:10	5489015	20160824051756837742000000	</DATA>
+        <DATA>	2016-12-01T00:10:02	5497756	20160915055426038684000000	</DATA>
+        <DATA>	2016-12-01T00:10:26	5528935	20161123230848928777000000	</DATA>
+        <DATA>	2016-12-01T00:10:52	5528955	20161123234916869427000000	</DATA>
+        <DATA>	2016-12-01T00:14:31	5530021	20161127221848669500000000	</DATA>
+    </RETS>
+    """
+    delimiter = _parse_delimiter(elem)
 
     columns_elem = _find_or_raise(elem, 'COLUMNS')
     columns = _parse_data_line(columns_elem, delimiter)
